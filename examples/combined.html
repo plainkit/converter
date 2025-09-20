@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Combined HTMX + Alpine.js Example</title>
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Combined HTMX + Alpine.js Example</h1>
+
+        <!-- Search with Alpine state management and HTMX requests -->
+        <div x-data="{
+            query: '',
+            loading: false,
+            results: []
+        }">
+            <form hx-get="/api/search"
+                  hx-target="#search-results"
+                  hx-trigger="input delay:300ms from:#search-input"
+                  @htmx:before-request="loading = true"
+                  @htmx:after-request="loading = false">
+                <input type="text"
+                       id="search-input"
+                       name="q"
+                       x-model="query"
+                       placeholder="Search..."
+                       hx-indicator="#loading">
+                <div id="loading" x-show="loading" class="htmx-indicator">
+                    Searching...
+                </div>
+            </form>
+
+            <div id="search-results"></div>
+        </div>
+
+        <!-- Dynamic form with Alpine validation and HTMX submission -->
+        <div x-data="{
+            name: '',
+            email: '',
+            isValid() {
+                return this.name.trim() && this.email.includes('@');
+            },
+            submitting: false
+        }">
+            <form hx-post="/api/contact"
+                  hx-target="#form-response"
+                  @htmx:before-request="submitting = true"
+                  @htmx:after-request="submitting = false; name = ''; email = ''">
+
+                <label for="name">Name:</label>
+                <input type="text"
+                       id="name"
+                       name="name"
+                       x-model="name"
+                       :class="{ 'error': name && !name.trim() }"
+                       required>
+
+                <label for="email">Email:</label>
+                <input type="email"
+                       id="email"
+                       name="email"
+                       x-model="email"
+                       :class="{ 'error': email && !email.includes('@') }"
+                       required>
+
+                <button type="submit"
+                        :disabled="!isValid() || submitting"
+                        x-text="submitting ? 'Submitting...' : 'Submit'">
+                </button>
+            </form>
+
+            <div id="form-response"></div>
+        </div>
+
+        <!-- Real-time chat with Alpine UI and HTMX updates -->
+        <div x-data="{
+            message: '',
+            typing: false,
+            users: ['Alice', 'Bob', 'Charlie']
+        }">
+            <div id="chat-messages"
+                 hx-sse="connect:/chat/events"
+                 hx-swap="beforeend">
+                <!-- Messages will be loaded here -->
+            </div>
+
+            <form hx-post="/api/chat/message"
+                  hx-target="#chat-messages"
+                  hx-swap="beforeend"
+                  @submit="message = ''"
+                  @htmx:after-request="$el.reset()">
+
+                <input type="text"
+                       name="message"
+                       x-model="message"
+                       @input="typing = true"
+                       @input.debounce.1000ms="typing = false"
+                       placeholder="Type a message..."
+                       required>
+
+                <button type="submit" :disabled="!message.trim()">Send</button>
+            </form>
+
+            <div x-show="typing" x-transition>
+                Someone is typing...
+            </div>
+        </div>
+
+        <!-- Shopping cart with Alpine state and HTMX updates -->
+        <div x-data="{
+            cart: [],
+            total: 0,
+            addToCart(item) {
+                this.cart.push(item);
+                this.updateTotal();
+            },
+            removeFromCart(index) {
+                this.cart.splice(index, 1);
+                this.updateTotal();
+            },
+            updateTotal() {
+                this.total = this.cart.reduce((sum, item) => sum + item.price, 0);
+            }
+        }">
+            <!-- Product list loaded via HTMX -->
+            <div hx-get="/api/products"
+                 hx-trigger="load"
+                 hx-target="#product-list">
+                Loading products...
+            </div>
+
+            <div id="product-list">
+                <!-- Products will be loaded here -->
+            </div>
+
+            <!-- Cart display -->
+            <div class="cart">
+                <h3>Shopping Cart</h3>
+                <div x-show="cart.length === 0">Cart is empty</div>
+
+                <template x-for="(item, index) in cart" :key="index">
+                    <div class="cart-item">
+                        <span x-text="item.name"></span>
+                        <span x-text="'$' + item.price"></span>
+                        <button @click="removeFromCart(index)">Remove</button>
+                    </div>
+                </template>
+
+                <div x-show="cart.length > 0">
+                    <div>Total: $<span x-text="total.toFixed(2)"></span></div>
+
+                    <button hx-post="/api/checkout"
+                            hx-vals="js:{items: JSON.stringify($data.cart)}"
+                            hx-target="#checkout-response"
+                            @htmx:after-request="cart = []; total = 0">
+                        Checkout
+                    </button>
+                </div>
+
+                <div id="checkout-response"></div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

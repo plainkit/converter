@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>HTMX Example</title>
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>HTMX Interactive Example</h1>
+
+        <!-- Simple GET request -->
+        <button hx-get="/api/time" hx-target="#current-time" hx-trigger="click">
+            Get Current Time
+        </button>
+        <div id="current-time"></div>
+
+        <!-- Form with POST -->
+        <form hx-post="/api/users" hx-target="#user-list" hx-swap="beforeend">
+            <input type="text" name="name" placeholder="User name" required>
+            <button type="submit">Add User</button>
+        </form>
+
+        <div id="user-list"></div>
+
+        <!-- Load content with indicator -->
+        <div hx-get="/api/content"
+             hx-trigger="load"
+             hx-indicator=".loading"
+             hx-target="#content">
+            <div class="loading">Loading...</div>
+        </div>
+        <div id="content"></div>
+
+        <!-- Delete with confirmation -->
+        <button hx-delete="/api/items/1"
+                hx-confirm="Are you sure?"
+                hx-target="#item-1"
+                hx-swap="outerHTML">
+            Delete Item
+        </button>
+        <div id="item-1">Item to delete</div>
+
+        <!-- Real-time updates -->
+        <div hx-sse="connect:/events" hx-swap="beforeend">
+            <div hx-sse="swap:message"></div>
+        </div>
+    </div>
+</body>
+</html>
